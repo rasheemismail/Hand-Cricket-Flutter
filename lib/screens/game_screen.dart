@@ -19,6 +19,7 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   int? _selectedIndex;
+  int _previousBallsBowled = 0; // Track previous ball count
   late AnimationController _timerController;
 
   @override
@@ -42,14 +43,24 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       builder: (context, gameProvider, child) {
         final gameState = gameProvider.state;
 
+        // Restart the timer when a new ball starts.
         if (gameState.timeRemaining == GameRules.timerDuration) {
           _timerController.reset();
           _timerController.forward();
+        }
 
-          // Only clear selection when last ball is complete and a new one starts
-          if (gameState.isBallComplete) {
-            _selectedIndex = null;
-          }
+        // Reset the selected button only when a new ball has started.
+        // That is, when the ballsBowled count has increased and the new ball is active.
+        if (gameState.ballsBowled != _previousBallsBowled &&
+            !gameState.isBallComplete) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _selectedIndex = null;
+                _previousBallsBowled = gameState.ballsBowled;
+              });
+            }
+          });
         }
 
         if (gameState.phase == GamePhase.gameOver) {
